@@ -1,3 +1,0 @@
-[周一 2026/05/18 21:10:30.02] install started 
-Using Python command: py -3.13 
-[周一 2026/05/18 21:10:59.99] install completed 

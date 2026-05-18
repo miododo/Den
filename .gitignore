@@ -11,3 +11,8 @@ build/
 *.spec
 .DS_Store
 Thumbs.db
+install_log.txt
+installer_stderr.txt
+installer_stdout.txt
+server_stderr.txt
+server_stdout.txt
