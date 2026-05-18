@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+integrated_runtime/
+web_runtime/
+.env
+*.egg-info/
+dist/
+build/
+*.spec
+.DS_Store
+Thumbs.db

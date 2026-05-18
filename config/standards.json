@@ -1,0 +1,184 @@
+{
+  "air_gb3095_2012_grade2": {
+    "name": "GB 3095-2012 环境空气质量标准（二级，MVP 子集）",
+    "description": "用于报告照片识别 MVP 的常见污染物限值子集。真实项目请按监测时段和功能区继续扩展。",
+    "default_grade": "II",
+    "default_average_time": "24h",
+    "indicators": {
+      "PM2.5": {
+        "aliases": ["PM2.5", "PM₂.₅", "细颗粒物"],
+        "mode": "max",
+        "unit": "μg/m³",
+        "limits": {
+          "24h": {"I": 35, "II": 75},
+          "annual": {"I": 15, "II": 35}
+        }
+      },
+      "PM10": {
+        "aliases": ["PM10", "PM₁₀", "可吸入颗粒物"],
+        "mode": "max",
+        "unit": "μg/m³",
+        "limits": {
+          "24h": {"I": 50, "II": 150},
+          "annual": {"I": 40, "II": 70}
+        }
+      },
+      "SO2": {
+        "aliases": ["SO2", "SO₂", "二氧化硫"],
+        "mode": "max",
+        "unit": "μg/m³",
+        "limits": {
+          "1h": {"I": 150, "II": 500},
+          "24h": {"I": 50, "II": 150},
+          "annual": {"I": 20, "II": 60}
+        }
+      },
+      "NO2": {
+        "aliases": ["NO2", "NO₂", "二氧化氮"],
+        "mode": "max",
+        "unit": "μg/m³",
+        "limits": {
+          "1h": {"I": 200, "II": 200},
+          "24h": {"I": 80, "II": 80},
+          "annual": {"I": 40, "II": 40}
+        }
+      },
+      "NOx": {
+        "aliases": ["NOx", "NOX", "氮氧化物"],
+        "mode": "max",
+        "unit": "μg/m³",
+        "limits": {
+          "1h": {"I": 250, "II": 250},
+          "24h": {"I": 100, "II": 100},
+          "annual": {"I": 50, "II": 50}
+        }
+      },
+      "CO": {
+        "aliases": ["CO", "一氧化碳"],
+        "mode": "max",
+        "unit": "mg/m³",
+        "limits": {
+          "1h": {"I": 10, "II": 10},
+          "24h": {"I": 4, "II": 4}
+        }
+      },
+      "O3": {
+        "aliases": ["O3", "O₃", "臭氧"],
+        "mode": "max",
+        "unit": "μg/m³",
+        "limits": {
+          "1h": {"I": 160, "II": 200},
+          "8h": {"I": 100, "II": 160}
+        }
+      }
+    }
+  },
+  "surface_water_gb3838_subset": {
+    "name": "GB 3838-2002 地表水环境质量标准（III 类，MVP 子集）",
+    "description": "用于 MVP 的地表水常见指标子集。湖库总磷、总氮等应按项目场景细化。",
+    "default_grade": "III",
+    "indicators": {
+      "pH": {
+        "aliases": ["pH", "PH"],
+        "mode": "range",
+        "unit": "无量纲",
+        "I": [6.0, 9.0],
+        "II": [6.0, 9.0],
+        "III": [6.0, 9.0],
+        "IV": [6.0, 9.0],
+        "V": [6.0, 9.0]
+      },
+      "溶解氧": {
+        "aliases": ["DO", "溶解氧"],
+        "mode": "min",
+        "unit": "mg/L",
+        "I": 7.5,
+        "II": 6.0,
+        "III": 5.0,
+        "IV": 3.0,
+        "V": 2.0
+      },
+      "高锰酸盐指数": {
+        "aliases": ["高锰酸盐指数", "CODMn"],
+        "mode": "max",
+        "unit": "mg/L",
+        "I": 2.0,
+        "II": 4.0,
+        "III": 6.0,
+        "IV": 10.0,
+        "V": 15.0
+      },
+      "COD": {
+        "aliases": ["COD", "化学需氧量"],
+        "mode": "max",
+        "unit": "mg/L",
+        "I": 15.0,
+        "II": 15.0,
+        "III": 20.0,
+        "IV": 30.0,
+        "V": 40.0
+      },
+      "BOD5": {
+        "aliases": ["BOD5", "BOD₅", "五日生化需氧量"],
+        "mode": "max",
+        "unit": "mg/L",
+        "I": 3.0,
+        "II": 3.0,
+        "III": 4.0,
+        "IV": 6.0,
+        "V": 10.0
+      },
+      "氨氮": {
+        "aliases": ["氨氮", "NH3-N", "NH₃-N"],
+        "mode": "max",
+        "unit": "mg/L",
+        "I": 0.15,
+        "II": 0.5,
+        "III": 1.0,
+        "IV": 1.5,
+        "V": 2.0
+      },
+      "总磷": {
+        "aliases": ["总磷", "TP"],
+        "mode": "max",
+        "unit": "mg/L",
+        "I": 0.02,
+        "II": 0.1,
+        "III": 0.2,
+        "IV": 0.3,
+        "V": 0.4
+      },
+      "总氮": {
+        "aliases": ["总氮", "TN"],
+        "mode": "max",
+        "unit": "mg/L",
+        "I": 0.2,
+        "II": 0.5,
+        "III": 1.0,
+        "IV": 1.5,
+        "V": 2.0
+      },
+      "石油类": {
+        "aliases": ["石油类"],
+        "mode": "max",
+        "unit": "mg/L",
+        "I": 0.05,
+        "II": 0.05,
+        "III": 0.05,
+        "IV": 0.5,
+        "V": 1.0
+      }
+    }
+  },
+  "groundwater_custom": {
+    "name": "地下水自定义规则",
+    "description": "默认不做超标判定，建议按项目标准另行扩展。",
+    "default_grade": "III",
+    "indicators": {}
+  },
+  "wastewater_custom": {
+    "name": "废水/排污许可自定义规则",
+    "description": "废水限值高度依赖行业、排口、排污许可和地方标准，MVP 默认只做结构化抽取。",
+    "indicators": {}
+  }
+}

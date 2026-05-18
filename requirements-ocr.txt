@@ -1,0 +1,10 @@
+paddlepaddle==3.0.0
+paddleocr==2.10.0
+rapidocr>=3.8
+onnxruntime>=1.26
+pyclipper>=1.4
+Shapely>=2.1
+omegaconf>=2.3
+colorlog>=6.10
+tqdm>=4.67
+pytesseract>=0.3.13

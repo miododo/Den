@@ -1,0 +1,22 @@
+==================================================
+Env AI Validator - Windows installer
+==================================================
+
+This window will show progress. Do not close it.
+Log file: C:\Users\Lenovo\Desktop\env-ai-validator-release\install_log.txt
+
+Using Python command: py -3.13
+
+[1/3] Creating virtual environment .venv ...
+
+[2/3] Upgrading pip ...
+
+[3/3] Installing minimal Web dependencies ...
+
+
+==================================================
+Install completed.
+Next: run start_release_web.bat
+Optional OCR: run install_ocr_windows.bat after the Web app works.
+==================================================
+请按任意键继续. . . 

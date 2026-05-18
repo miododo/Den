@@ -1,0 +1,205 @@
+{
+  "version": "2026-05-15",
+  "description": "环境检测报告计算公式库。用于机器计算复核；含来源文件、适用指标、所需实验原始参数和可执行表达式。",
+  "formulas": [
+    {
+      "id": "ph_electrode_hj1147_2020",
+      "indicator": "pH",
+      "aliases": ["pH", "PH", "氢离子浓度指数"],
+      "method_name": "水质 pH 值的测定 电极法",
+      "method_standard": "HJ 1147-2020",
+      "result_unit": "无量纲",
+      "required_inputs": ["ph_value"],
+      "defaults": {},
+      "derived": [],
+      "result_expression": "ph_value",
+      "tolerance": {"absolute": 0.05, "relative": 0.0},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\PH\\ph计算标准.pdf",
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\PH\\ph计算方法.docx"
+      ],
+      "notes": "pH 为仪器直接读数；机器复核重点为范围、单位无量纲和报告限值。"
+    },
+    {
+      "id": "tn_uv_hj636_2012",
+      "indicator": "总氮",
+      "aliases": ["总氮", "TN"],
+      "method_name": "碱性过硫酸钾消解紫外分光光度法",
+      "method_standard": "HJ 636-2012",
+      "result_unit": "mg/L",
+      "required_inputs": ["a220", "a275", "slope", "intercept", "sample_volume_ml"],
+      "defaults": {"blank_mass_ug": 0, "dilution_factor": 1},
+      "derived": [
+        {"name": "corrected_absorbance", "expression": "a220 - 2 * a275"},
+        {"name": "mass_ug", "expression": "(corrected_absorbance - intercept) / slope - blank_mass_ug"}
+      ],
+      "result_expression": "mass_ug / sample_volume_ml * dilution_factor",
+      "tolerance": {"absolute": 0.05, "relative": 0.05},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\总氮\\总氮测定标准.pdf",
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\总氮\\总氮计算方法.docx"
+      ],
+      "notes": "HJ 636-2012 中校正吸光度 A=A220-2A275；若校准曲线返回浓度而非质量，应将 slope/intercept 口径同步录入。"
+    },
+    {
+      "id": "nh3n_nessler_hj535_2009",
+      "indicator": "氨氮",
+      "aliases": ["氨氮", "NH3-N", "NH₃-N", "铵氮"],
+      "method_name": "纳氏试剂分光光度法",
+      "method_standard": "HJ 535-2009",
+      "result_unit": "mg/L",
+      "required_inputs": ["absorbance", "blank_absorbance", "slope", "intercept", "sample_volume_ml"],
+      "defaults": {"dilution_factor": 1},
+      "derived": [
+        {"name": "net_absorbance", "expression": "absorbance - blank_absorbance"},
+        {"name": "mass_ug", "expression": "(net_absorbance - intercept) / slope"}
+      ],
+      "result_expression": "mass_ug / sample_volume_ml * dilution_factor",
+      "tolerance": {"absolute": 0.02, "relative": 0.05},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\氨氮\\氨氮的测定（纳氏试剂分光光度法）.pdf",
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\氨氮\\氨氮计算.docx"
+      ],
+      "notes": "公式按校准曲线由吸光度反算氨氮质量，再除以取样体积；斜率/截距需与实验室曲线坐标口径一致。"
+    },
+    {
+      "id": "nh3n_salicylic_hj536_2009",
+      "indicator": "氨氮",
+      "aliases": ["氨氮", "NH3-N", "NH₃-N", "铵氮"],
+      "method_name": "水杨酸分光光度法",
+      "method_standard": "HJ 536-2009",
+      "result_unit": "mg/L",
+      "required_inputs": ["absorbance", "blank_absorbance", "slope", "intercept", "sample_volume_ml"],
+      "defaults": {"dilution_factor": 1},
+      "derived": [
+        {"name": "net_absorbance", "expression": "absorbance - blank_absorbance"},
+        {"name": "mass_ug", "expression": "(net_absorbance - intercept) / slope"}
+      ],
+      "result_expression": "mass_ug / sample_volume_ml * dilution_factor",
+      "tolerance": {"absolute": 0.02, "relative": 0.05},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\氨氮\\氨氮的测定（水杨酸法）.pdf",
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\氨氮\\氨氮计算.docx"
+      ],
+      "notes": "以扣除空白的吸光度与氨氮含量绘制校准曲线。"
+    },
+    {
+      "id": "cod_dichromate_hj828_2017",
+      "indicator": "COD",
+      "aliases": ["COD", "CODCr", "化学需氧量"],
+      "method_name": "重铬酸盐法",
+      "method_standard": "HJ 828-2017",
+      "result_unit": "mg/L",
+      "required_inputs": ["c_ferrous_ammonium_sulfate_mol_l", "blank_volume_ml", "sample_volume_titrant_ml", "sample_volume_ml"],
+      "defaults": {"dilution_factor": 1},
+      "derived": [
+        {
+          "name": "titrant_delta_ml",
+          "expression": "blank_volume_ml - sample_volume_titrant_ml"
+        }
+      ],
+      "result_expression": "c_ferrous_ammonium_sulfate_mol_l * titrant_delta_ml * 8000 / sample_volume_ml * dilution_factor",
+      "tolerance": {"absolute": 5, "relative": 0.08},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\化学需氧量\\化学需氧量测定方法.pdf",
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\化学需氧量\\化学需氧量计算方法(1).docx"
+      ],
+      "notes": "适用于重铬酸盐法常规滴定计算；氯离子干扰、稀释倍数和空白扣除须与实验记录一致。"
+    },
+    {
+      "id": "codmn_permanganate_gb11892_1989",
+      "indicator": "高锰酸盐指数",
+      "aliases": ["高锰酸盐指数", "CODMn"],
+      "method_name": "酸性高锰酸钾法",
+      "method_standard": "GB 11892-1989",
+      "result_unit": "mg/L",
+      "required_inputs": ["sample_titrant_ml", "blank_titrant_ml", "c_permanganate_mol_l", "sample_volume_ml"],
+      "defaults": {"dilution_factor": 1},
+      "derived": [
+        {"name": "titrant_delta_ml", "expression": "sample_titrant_ml - blank_titrant_ml"}
+      ],
+      "result_expression": "titrant_delta_ml * c_permanganate_mol_l * 8000 / sample_volume_ml * dilution_factor",
+      "tolerance": {"absolute": 0.5, "relative": 0.08},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\高锰酸钾盐指数\\高锰酸盐指数测定方法.pdf",
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\高锰酸钾盐指数\\高锰酸盐指数计算方法(1).docx"
+      ],
+      "notes": "不同标准版本/酸性或碱性条件下修正项可能不同，需用实验室原始记录确认空白与稀释口径。"
+    },
+    {
+      "id": "do_probe_hj506_2009",
+      "indicator": "溶解氧",
+      "aliases": ["溶解氧", "DO"],
+      "method_name": "电化学探头法温度校正",
+      "method_standard": "HJ 506-2009",
+      "result_unit": "mg/L",
+      "required_inputs": ["apparent_do_mg_l", "solubility_measure_mg_l", "solubility_calibration_mg_l"],
+      "defaults": {},
+      "derived": [],
+      "result_expression": "apparent_do_mg_l * solubility_measure_mg_l / solubility_calibration_mg_l",
+      "tolerance": {"absolute": 0.3, "relative": 0.05},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\溶解氧\\溶解氧计算.docx"
+      ],
+      "notes": "对应温度校正 ρ(O)=ρ'(O)×ρ(O)m/ρ(O)c。"
+    },
+    {
+      "id": "do_pressure_hj506_2009",
+      "indicator": "溶解氧",
+      "aliases": ["溶解氧", "DO"],
+      "method_name": "电化学探头法气压校正",
+      "method_standard": "HJ 506-2009",
+      "result_unit": "mg/L",
+      "required_inputs": ["default_pressure_do_mg_l", "pressure_kpa", "water_vapor_pressure_kpa"],
+      "defaults": {},
+      "derived": [],
+      "result_expression": "default_pressure_do_mg_l * (pressure_kpa - water_vapor_pressure_kpa) / (101.325 - water_vapor_pressure_kpa)",
+      "tolerance": {"absolute": 0.3, "relative": 0.05},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\溶解氧\\溶解氧计算.docx"
+      ],
+      "notes": "对应气压校正式，需提供测量气压和该温度饱和水蒸气压。"
+    },
+    {
+      "id": "bod5_dilution_hj505_2009",
+      "indicator": "BOD5",
+      "aliases": ["BOD5", "BOD₅", "五日生化需氧量"],
+      "method_name": "稀释与接种法",
+      "method_standard": "HJ 505-2009",
+      "result_unit": "mg/L",
+      "required_inputs": ["do_initial_mg_l", "do_final_mg_l"],
+      "defaults": {"dilution_factor": 1, "seed_correction_mg_l": 0},
+      "derived": [
+        {"name": "oxygen_depletion_mg_l", "expression": "do_initial_mg_l - do_final_mg_l - seed_correction_mg_l"}
+      ],
+      "result_expression": "oxygen_depletion_mg_l * dilution_factor",
+      "tolerance": {"absolute": 0.5, "relative": 0.08},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\五日生化需氧量BOD5\\五日生化需氧量（BOD5）的测定.pdf",
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\五日生化需氧量BOD5\\五日生化需氧量计算.docx"
+      ],
+      "notes": "若采用接种稀释水，应录入接种校正量；无接种时默认为 0。"
+    },
+    {
+      "id": "tp_molybdate_gb11893_1989",
+      "indicator": "总磷",
+      "aliases": ["总磷", "TP"],
+      "method_name": "钼酸铵分光光度法",
+      "method_standard": "GB 11893-1989",
+      "result_unit": "mg/L",
+      "required_inputs": ["absorbance", "blank_absorbance", "slope", "intercept", "sample_volume_ml"],
+      "defaults": {"dilution_factor": 1},
+      "derived": [
+        {"name": "net_absorbance", "expression": "absorbance - blank_absorbance"},
+        {"name": "mass_ug", "expression": "(net_absorbance - intercept) / slope"}
+      ],
+      "result_expression": "mass_ug / sample_volume_ml * dilution_factor",
+      "tolerance": {"absolute": 0.02, "relative": 0.08},
+      "source_files": [
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\总磷\\总磷测定标准.pdf",
+        "D:\\个人资料\\比赛内容\\环境检测标准\\地表水\\总磷\\总磷计算方法.docx"
+      ],
+      "notes": "由校准曲线换算磷质量后除以取样体积。"
+    }
+  ]
+}
