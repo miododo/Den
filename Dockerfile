@@ -25,3 +25,4 @@ ENV PORT=8080
 EXPOSE 8080
 
 CMD python -m uvicorn integrated_test_app:app --host 0.0.0.0 --port ${PORT:-8080}
+# trigger
