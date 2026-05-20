@@ -19,7 +19,7 @@ ENV PYTHONIOENCODING=utf-8
 ENV FLAGS_use_mkldnn=0
 ENV OCR_MAX_PAGES=all
 ENV OCR_FORCE_LOCAL=0
-# Build v20260520 — AI config panel fix
+# Build v20260520-2 — AI panel expand fix
 ENV PORT=8080
 
 EXPOSE 8080
