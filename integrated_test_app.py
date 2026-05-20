@@ -1223,6 +1223,11 @@ def health() -> dict:
     }
 
 
+@app.get("/api/health")
+def api_health() -> dict:
+    return health()
+
+
 @app.get("/api/standards")
 def list_standards() -> dict:
     return standards.names()
