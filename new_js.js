@@ -1,6 +1,11 @@
 
     // ═══════════════════ NEW UI FEATURES ═══════════════════
 
+    // ── AI Config card toggle ──
+    document.getElementById("aiConfigToggle").addEventListener("click", () => {
+      document.getElementById("aiConfigCard").classList.toggle("collapsed");
+    });
+
     // ── API Key toggle ──
     document.getElementById("toggleApiKeyBtn").addEventListener("click", () => {
       const inp = document.getElementById("aiApiKey");

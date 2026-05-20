@@ -277,7 +277,7 @@ pre {
 
 <div class="container"><main>
 <!-- ═══════════════════════════════ AI CONFIG CARD (COLLAPSIBLE) ═══════════════════════════════ -->
-<div class="card collapsed" id="aiConfigCard">
+<div class="card" id="aiConfigCard">
   <div class="card-header" id="aiConfigToggle">
     <h2>⚙ AI 模型配置</h2>
     <span class="card-badge" id="aiBadge" style="background:#fef2f2;color:#dc2626;">未连接</span>
@@ -990,6 +990,580 @@ pre {
       .catch((error) => setStatus(error.message));
   
     // ═══════════════════ NEW UI FEATURES ═══════════════════
+
+    // ── API Key toggle ──
+    document.getElementById("toggleApiKeyBtn").addEventListener("click", () => {
+      const inp = document.getElementById("aiApiKey");
+      inp.type = inp.type === "password" ? "text" : "password";
+    });
+
+    // ── Table search / filter / sort ──
+    let allRecords = [];
+    let activeFilter = "all";
+    const tableSearch = document.getElementById("tableSearch");
+    const tableFilter = document.getElementById("tableFilter");
+    const tableCount = document.getElementById("tableCount");
+    const clearFilterBtn = document.getElementById("clearFilterBtn");
+
+    function applyTableFilters() {
+      const query = (tableSearch.value || "").toLowerCase();
+      const filter = tableFilter.value;
+      const rows = document.querySelectorAll("#records tr");
+      let visible = 0;
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const statusClass = row.querySelector("td:nth-child(5)")?.className || "";
+        let show = text.includes(query);
+        if (filter === "pass") show = show && statusClass.includes("pass") && !statusClass.includes("review");
+        else if (filter === "fail") show = show && statusClass.includes("fail");
+        else if (filter === "review") show = show && (statusClass.includes("review") || statusClass.includes("unknown"));
+        row.style.display = show ? "" : "none";
+        if (show) visible++;
+      });
+      tableCount.textContent = visible + " / " + rows.length + " 条记录";
+    }
+    tableSearch.addEventListener("input", applyTableFilters);
+    tableFilter.addEventListener("change", applyTableFilters);
+    clearFilterBtn.addEventListener("click", () => {
+      tableSearch.value = "";
+      tableFilter.value = "all";
+      activeFilter = "all";
+      document.querySelectorAll(".dash-card").forEach(c => c.classList.remove("active-filter"));
+      applyTableFilters();
+    });
+
+    // ── Dashboard card filtering ──
+    document.querySelectorAll(".dash-card[data-filter]").forEach(card => {
+      card.addEventListener("click", () => {
+        const filter = card.dataset.filter;
+        if (activeFilter === filter) {
+          activeFilter = "all";
+          card.classList.remove("active-filter");
+          tableFilter.value = "all";
+        } else {
+          document.querySelectorAll(".dash-card").forEach(c => c.classList.remove("active-filter"));
+          activeFilter = filter;
+          card.classList.add("active-filter");
+          tableFilter.value = filter === "review" ? "review" : filter;
+        }
+        applyTableFilters();
+      });
+    });
+
+    // ── Override renderAnalyze for dashboard + downloads ──
+    const origRenderAnalyze = renderAnalyze;
+    renderAnalyze = function(result) {
+      origRenderAnalyze(result);
+      const stats = result.statistics || {};
+      const judged = (stats.pass_count || 0) + (stats.fail_count || 0);
+      const totalR = stats.total_records || 0;
+      const passR = stats.pass_count || 0;
+      const failR = stats.fail_count || 0;
+      const reviewR = stats.review_count || 0;
+      // Hero stats
+      document.getElementById("hsReports").textContent = judged || "0";
+      document.getElementById("hsItems").textContent = totalR;
+      document.getElementById("hsAbnormal").textContent = failR;
+      document.getElementById("hsRate").textContent = judged ? ((passR/judged)*100).toFixed(0)+"%" : "-";
+      // Dashboard
+      document.getElementById("dashPass").textContent = passR;
+      document.getElementById("dashFormula").textContent = judged ? ((passR/judged)*100).toFixed(0)+"%" : "-";
+      // Downloads
+      const dl = result.downloads || {};
+      document.getElementById("dlExcel").innerHTML = dl.Excel ? '<a href="'+dl.Excel+'" target="_blank">下载 Excel</a>' : '<span class="dl-status">等待生成</span>';
+      document.getElementById("dlPdf").innerHTML = dl["增强 PDF"] ? '<a href="'+dl['增强 PDF']+'" target="_blank">下载 PDF</a>' : '<span class="dl-status">等待生成</span>';
+      document.getElementById("dlHtml").innerHTML = dl.HTML ? '<a href="'+dl.HTML+'" target="_blank">下载 HTML</a>' : '<span class="dl-status">等待生成</span>';
+      document.getElementById("dlJson").innerHTML = dl.JSON ? '<a href="'+dl.JSON+'" target="_blank">下载 JSON</a>' : '<span class="dl-status">等待生成</span>';
+      applyTableFilters();
+    };
+
+    // ── File info display ──
+    filesInput.addEventListener("change", () => {
+      const info = document.getElementById("fileInfo");
+      if (filesInput.files.length) {
+        const items = [];
+        let totalSize = 0;
+        [...filesInput.files].forEach((f, i) => {
+          const size = f.size < 1048576 ? (f.size/1024).toFixed(0)+" KB" : (f.size/1048576).toFixed(1)+" MB";
+          totalSize += f.size;
+          items.push(i+1+". "+f.name+' ('+size+", "+f.name.split(".").pop().toUpperCase()+")");
+        });
+        const total = totalSize < 1048576 ? (totalSize/1024).toFixed(0)+" KB" : (totalSize/1048576).toFixed(1)+" MB";
+        info.innerHTML = "已选择 <b>"+filesInput.files.length+"</b> 个文件，共 <b>"+total+"</b><br>"+items.slice(0,8).join("<br>")+(items.length>8?"<br>…及其他 "+(items.length-8)+" 个文件":"");
+        info.style.display = "block";
+      } else {
+        info.style.display = "none";
+      }
+    });
+
+    // ── Step navigation click ──
+    document.querySelectorAll(".step").forEach(el => {
+      el.addEventListener("click", () => {
+        const n = parseInt(el.id.replace("step",""));
+        const isDone = el.classList.contains("done");
+        const isActive = el.classList.contains("active");
+        if (isDone || isActive) {
+          const targets = [null, "#aiConfigCard", "#files", "#runBtn", "#verifyBtn", "#dashSection"];
+          const target = targets[n];
+          if (target) {
+            const elTarget = document.querySelector(target);
+            if (elTarget) elTarget.scrollIntoView({behavior:"smooth",block:"center"});
+          }
+        } else {
+          statusEl.textContent = "请先完成前面的步骤";
+        }
+      });
+    });
+
+</script>
+
+<script>
+    const statusEl = document.getElementById("status");
+    const filesInput = document.getElementById("files");
+    const standard = document.getElementById("standard");
+    const form = document.getElementById("uploadForm");
+    const runBtn = document.getElementById("runBtn");
+    const formulaSelect = document.getElementById("formulaSelect");
+    const formulaInputs = document.getElementById("formulaInputs");
+    const formulaResult = document.getElementById("formulaResult");
+    const aiProvider = document.getElementById("aiProvider");
+    const aiModelSelect = document.getElementById("aiModelSelect");
+    const aiBaseUrl = document.getElementById("aiBaseUrl");
+    const aiModel = document.getElementById("aiModel");
+    const aiApiKey = document.getElementById("aiApiKey");
+    const aiConfigStatus = document.getElementById("aiConfigStatus");
+    let formulas = [];
+    let aiProviders = {};
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    function collectAiConfig() {
+      return {
+        ai_provider: aiProvider.value,
+        ai_base_url: aiBaseUrl.value.trim(),
+        ai_model: aiModel.value.trim(),
+        ai_api_key: aiApiKey.value.trim()
+      };
+    }
+
+    function appendAiConfig(formData) {
+      const config = collectAiConfig();
+      Object.entries(config).forEach(([key, value]) => formData.append(key, value));
+    }
+
+    async function loadAiProviders() {
+      const res = await fetch("/api/ai/providers");
+      const data = await res.json();
+      aiProviders = data.providers || {};
+      aiProvider.innerHTML = "";
+      Object.entries(aiProviders).forEach(([key, item]) => {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = item.name || key;
+        aiProvider.appendChild(option);
+      });
+    }
+
+    function currentAiPreset() {
+      return aiProviders[aiProvider.value] || aiProviders.custom || { models: [] };
+    }
+
+    function selectedModelPreset() {
+      const preset = currentAiPreset();
+      return (preset.models || []).find(item => item.id === aiModel.value.trim()) || {};
+    }
+
+    function updateAiCapabilityHint() {
+      const item = selectedModelPreset();
+      if (item.id && item.vision === false && document.getElementById("useAi").checked) {
+        aiConfigStatus.value = "当前模型偏文本，视觉抽取建议换视觉模型";
+      }
+    }
+
+    function renderAiModelOptions(currentModel = "") {
+      const preset = currentAiPreset();
+      const models = preset.models || [];
+      aiModelSelect.innerHTML = "";
+      models.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        const tags = [];
+        if (item.vision) tags.push("视觉");
+        if (item.status) tags.push(item.status);
+        if (item.note) tags.push(item.note);
+        option.textContent = `${item.name || item.id}${tags.length ? " / " + tags.join(" / ") : ""}`;
+        aiModelSelect.appendChild(option);
+      });
+      const custom = document.createElement("option");
+      custom.value = "__custom__";
+      custom.textContent = "自定义模型名";
+      aiModelSelect.appendChild(custom);
+      const matched = models.some(item => item.id === currentModel);
+      aiModelSelect.value = matched ? currentModel : "__custom__";
+      updateAiCapabilityHint();
+    }
+
+    function applyAiPreset(force = false) {
+      const preset = currentAiPreset();
+      const defaultModel = preset.default_model || ((preset.models || [])[0] || {}).id || "";
+      if (force || !aiBaseUrl.value.trim()) aiBaseUrl.value = preset.base_url || "";
+      if (force || !aiModel.value.trim()) aiModel.value = defaultModel;
+      renderAiModelOptions(aiModel.value.trim());
+      aiConfigStatus.value = preset.note || (preset.requires_key === false ? "本地/可免 Key，建议先测试" : "未测试");
+    }
+
+    function saveAiConfig() {
+      localStorage.setItem("envAiValidator.aiConfig", JSON.stringify(collectAiConfig()));
+      setStatus("AI API 配置已保存到本机浏览器");
+    }
+
+    function loadAiConfig() {
+      const raw = localStorage.getItem("envAiValidator.aiConfig");
+      if (!raw) {
+        applyAiPreset(true);
+        return;
+      }
+      try {
+        const config = JSON.parse(raw);
+        aiProvider.value = config.ai_provider || "openai";
+        if (!aiProvider.value) aiProvider.value = "custom";
+        aiBaseUrl.value = config.ai_base_url || "";
+        aiModel.value = config.ai_model || "";
+        aiApiKey.value = config.ai_api_key || "";
+        renderAiModelOptions(aiModel.value.trim());
+      } catch {
+        applyAiPreset(true);
+      }
+    }
+
+    function clearAiConfig() {
+      localStorage.removeItem("envAiValidator.aiConfig");
+      aiApiKey.value = "";
+      applyAiPreset(true);
+      setStatus("已清空本机 AI API 配置");
+    }
+
+    async function refreshAiModels() {
+      const config = collectAiConfig();
+      aiConfigStatus.value = "读取中...";
+      setStatus("正在读取模型列表");
+      try {
+        const res = await fetch("/api/ai/models", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(config)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "读取模型列表失败");
+        const preset = currentAiPreset();
+        preset.models = data.models || preset.models || [];
+        renderAiModelOptions(aiModel.value.trim());
+        aiConfigStatus.value = `已读取 ${preset.models.length} 个模型`;
+        setStatus("模型列表已更新");
+      } catch (error) {
+        aiConfigStatus.value = "读取失败";
+        setStatus(error.message);
+      }
+    }
+
+    async function testAiConfig() {
+      const config = collectAiConfig();
+      aiConfigStatus.value = "测试中...";
+      setStatus("正在测试 AI API");
+      try {
+        const res = await fetch("/api/ai/diagnose", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(config)
+        });
+        const data = await res.json();
+        if (!res.ok || data.ok === false) throw new Error((data.errors || [data.detail || "API 测试失败"]).join("；"));
+        const visionText = data.vision_ok ? "支持视觉" : "不支持视觉/将 OCR 降级";
+        aiConfigStatus.value = `连接成功，${visionText}`;
+        const modelText = data.model_available === false ? "；模型列表未直接命中，已通过实际调用验证" : "";
+        const warningText = (data.warnings || []).length ? `；提示：${data.warnings.join("；")}` : "";
+        setStatus(`AI API 诊断完成：文本调用正常，${visionText}${modelText}${warningText}`);
+      } catch (error) {
+        aiConfigStatus.value = "连接失败";
+        setStatus(error.message);
+      }
+    }
+
+    async function loadStandards() {
+      const res = await fetch("/api/standards");
+      const data = await res.json();
+      standard.innerHTML = "";
+      Object.entries(data).forEach(([key, name]) => {
+        const option = document.createElement("option");
+        option.value = key;
+        option.textContent = name;
+        standard.appendChild(option);
+      });
+    }
+
+    async function loadFormulas() {
+      const res = await fetch("/api/formulas");
+      const data = await res.json();
+      formulas = data.formulas || [];
+      formulaSelect.innerHTML = "";
+      formulas.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = `${item.indicator} - ${item.method_standard} - ${item.method_name}`;
+        formulaSelect.appendChild(option);
+      });
+      renderFormulaLibrary();
+      renderFormulaInputs();
+    }
+
+    function selectedFormula() {
+      return formulas.find(item => item.id === formulaSelect.value) || formulas[0] || {};
+    }
+
+    function renderFormulaInputs() {
+      const item = selectedFormula();
+      formulaInputs.innerHTML = "";
+      (item.required_inputs || []).forEach((name) => {
+        const label = document.createElement("label");
+        label.textContent = name;
+        const input = document.createElement("input");
+        input.type = "number";
+        input.step = "any";
+        input.dataset.inputName = name;
+        label.appendChild(input);
+        formulaInputs.appendChild(label);
+      });
+    }
+
+    function renderFormulaLibrary() {
+      const body = document.getElementById("formulaLibrary");
+      body.innerHTML = "";
+      formulas.forEach((item) => {
+        const tr = document.createElement("tr");
+        [
+          item.indicator || "",
+          item.method_name || "",
+          item.method_standard || "",
+          (item.required_inputs || []).join(", "),
+          (item.source_files || []).join("\\n")
+        ].forEach((value) => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    function suggestStandard(files) {
+      const names = [...files].map(file => file.name).join(" ").toLowerCase();
+      let key = "";
+      if (names.includes("废水") || names.includes("污水")) key = "wastewater_custom";
+      else if (names.includes("地下水")) key = "groundwater_custom";
+      else if (names.includes("地表水")) key = "surface_water_gb3838_subset";
+      else if (names.includes("空气") || names.includes("废气")) key = "air_gb3095_2012_grade2";
+      if (key && [...standard.options].some(option => option.value === key)) {
+        standard.value = key;
+        setStatus("已根据文件名自动匹配执行标准");
+      }
+    }
+
+    function renderAnalyze(result) {
+      const stats = result.statistics || {};
+      const judged = (stats.pass_count || 0) + (stats.fail_count || 0);
+      setText("rate", judged ? `${((stats.compliance_rate || 0) * 100).toFixed(1)}%` : "-");
+      setText("total", stats.total_records ?? 0);
+      setText("fail", stats.fail_count ?? 0);
+      setText("review", stats.review_count ?? 0);
+      setText("summary", result.brief_summary || "暂无简报");
+
+      const warnings = document.getElementById("warnings");
+      const warningText = (result.warnings || []).join("\\n");
+      warnings.textContent = warningText;
+      warnings.style.display = warningText ? "block" : "none";
+
+      const downloads = document.getElementById("downloads");
+      downloads.innerHTML = "";
+      Object.entries(result.downloads || {}).forEach(([label, url]) => {
+        if (!url) return;
+        const a = document.createElement("a");
+        a.href = url;
+        a.target = "_blank";
+        a.textContent = label;
+        downloads.appendChild(a);
+      });
+
+      const body = document.getElementById("records");
+      body.innerHTML = "";
+      (result.records || []).forEach((item) => {
+        const tr = document.createElement("tr");
+        const status = item.needs_review ? `复核/${item.status}` : item.status;
+        const formulaStatus = (item.formula_verification && item.formula_verification.status) || "";
+        const db = item.database_match || {};
+        const dbStatus = db.indicator_matched ? "标准库已匹配" : (db.reason || "数据库未匹配到对应依据");
+        const cells = [
+          item.normalized_indicator || item.indicator || "",
+          item.raw_value || item.value || "",
+          item.unit || "",
+          `${item.standard_limit || ""} ${item.limit_unit || ""}`.trim(),
+          status,
+          dbStatus,
+          formulaStatus,
+          item.confidence ?? "",
+          [item.sample_id || "", item.sample_point || ""].filter(Boolean).join(" / "),
+          item.detection_date || item.sample_time || "",
+          item.source_line || ""
+        ];
+        cells.forEach((value, index) => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          if (index === 4) td.className = item.needs_review ? "review" : (item.status || "");
+          if (index === 5 && !db.indicator_matched) td.className = "review";
+          if (index === 6 && formulaStatus.includes("missing")) td.className = "review";
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+      document.getElementById("jsonPreview").textContent = JSON.stringify(result, null, 2);
+    }
+
+    function collectFormulaInputs() {
+      const inputs = {};
+      formulaInputs.querySelectorAll("input[data-input-name]").forEach((input) => {
+        if (input.value !== "") inputs[input.dataset.inputName] = Number(input.value);
+      });
+      return inputs;
+    }
+
+    function fillDemo() {
+      const item = selectedFormula();
+      const samples = {
+        cod_dichromate_hj828_2017: {
+          reportedValue: 200,
+          inputs: {
+            c_ferrous_ammonium_sulfate_mol_l: 0.25,
+            blank_volume_ml: 10,
+            sample_volume_titrant_ml: 8,
+            sample_volume_ml: 20,
+            dilution_factor: 1
+          }
+        },
+        nh3n_salicylic_hj536_2009: {
+          reportedValue: 0.5,
+          inputs: { absorbance: 0.26, blank_absorbance: 0.01, slope: 0.5, intercept: 0, sample_volume_ml: 1 }
+        },
+        ph_electrode_hj1147_2020: {
+          reportedValue: 7.2,
+          inputs: { ph_value: 7.2 }
+        }
+      };
+      const sample = samples[item.id] || { reportedValue: "", inputs: {} };
+      document.getElementById("reportedValue").value = sample.reportedValue;
+      formulaInputs.querySelectorAll("input[data-input-name]").forEach((input) => {
+        input.value = sample.inputs[input.dataset.inputName] ?? "";
+      });
+    }
+
+    async function verifyFormula() {
+      const item = selectedFormula();
+      const reportedValue = document.getElementById("reportedValue").value;
+      const payload = {
+        indicator: item.indicator,
+        method_id: item.id,
+        reported_value: reportedValue === "" ? null : Number(reportedValue),
+        use_ai: document.getElementById("formulaAi").checked,
+        inputs: collectFormulaInputs(),
+        ...collectAiConfig()
+      };
+      setStatus("公式核验中");
+      document.getElementById("verifyBtn").disabled = true;
+      try {
+        const res = await fetch("/api/formula/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "公式核验失败");
+        formulaResult.textContent = JSON.stringify(data, null, 2);
+        activateTab("formulaTab");
+        setStatus("公式核验完成");
+      } catch (error) {
+        setStatus(error.message);
+      } finally {
+        document.getElementById("verifyBtn").disabled = false;
+      }
+    }
+
+    function activateTab(tabId) {
+      document.querySelectorAll(".tab-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.tab === tabId));
+      document.querySelectorAll(".tab").forEach(tab => tab.classList.toggle("active", tab.id === tabId));
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const files = filesInput.files;
+      if (!files.length) {
+        setStatus("请选择文件");
+        return;
+      }
+      const data = new FormData();
+      [...files].forEach(file => data.append("files", file));
+      data.append("standard_key", standard.value);
+      data.append("use_ai", document.getElementById("useAi").checked ? "true" : "false");
+      appendAiConfig(data);
+      runBtn.disabled = true;
+      setStatus("识别中：正在预处理、OCR、结构化、标准判定和公式库匹配");
+      try {
+        const res = await fetch("/api/analyze", { method: "POST", body: data });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.detail || "识别失败");
+        renderAnalyze(payload);
+        activateTab("recordsTab");
+        setStatus("报告识别完成");
+      } catch (error) {
+        setStatus(error.message);
+      } finally {
+        runBtn.disabled = false;
+      }
+    });
+
+    filesInput.addEventListener("change", () => suggestStandard(filesInput.files));
+    formulaSelect.addEventListener("change", renderFormulaInputs);
+    aiProvider.addEventListener("change", () => applyAiPreset(true));
+    aiModelSelect.addEventListener("change", () => {
+      if (aiModelSelect.value !== "__custom__") aiModel.value = aiModelSelect.value;
+      updateAiCapabilityHint();
+    });
+    aiModel.addEventListener("input", () => renderAiModelOptions(aiModel.value.trim()));
+    document.getElementById("useAi").addEventListener("change", updateAiCapabilityHint);
+    document.getElementById("saveAiConfigBtn").addEventListener("click", saveAiConfig);
+    document.getElementById("clearAiConfigBtn").addEventListener("click", clearAiConfig);
+    document.getElementById("refreshAiModelsBtn").addEventListener("click", refreshAiModels);
+    document.getElementById("testAiConfigBtn").addEventListener("click", testAiConfig);
+    document.getElementById("verifyBtn").addEventListener("click", verifyFormula);
+    document.getElementById("fillDemoBtn").addEventListener("click", fillDemo);
+    document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.tab)));
+
+    Promise.all([loadAiProviders(), loadStandards(), loadFormulas()])
+      .then(() => {
+        loadAiConfig();
+        setStatus("就绪");
+      })
+      .catch((error) => setStatus(error.message));
+  
+    // ═══════════════════ NEW UI FEATURES ═══════════════════
+
+    // ── AI Config card toggle ──
+    document.getElementById("aiConfigToggle").addEventListener("click", () => {
+      document.getElementById("aiConfigCard").classList.toggle("collapsed");
+    });
 
     // ── API Key toggle ──
     document.getElementById("toggleApiKeyBtn").addEventListener("click", () => {
