@@ -14,14 +14,13 @@ COPY . .
 
 RUN mkdir -p integrated_runtime/uploads integrated_runtime/exports
 
-ENV APP_HOST=0.0.0.0
-ENV APP_PORT=8010
 ENV PYTHONUTF8=1
 ENV PYTHONIOENCODING=utf-8
 ENV FLAGS_use_mkldnn=0
 ENV OCR_MAX_PAGES=all
 ENV OCR_FORCE_LOCAL=1
+ENV PORT=8080
 
-EXPOSE 8010
+EXPOSE 8080
 
-CMD ["python", "-m", "uvicorn", "integrated_test_app:app", "--host", "0.0.0.0", "--port", "8010"]
+CMD python -m uvicorn integrated_test_app:app --host 0.0.0.0 --port ${PORT:-8080}
