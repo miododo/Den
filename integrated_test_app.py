@@ -386,365 +386,628 @@ app = FastAPI(title="Env AI Integrated Test Console", version="0.3.0")
 app.mount("/exports", StaticFiles(directory=EXPORTS_DIR), name="exports")
 
 
-INDEX_HTML = """
+INDEX_HTML = “””
 <!doctype html>
-<html lang="zh-CN">
+<html lang=”zh-CN”>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>环境检测智能识别与公式核验测试台</title>
+  <meta charset=”utf-8” />
+  <meta name=”viewport” content=”width=device-width, initial-scale=1” />
+  <title>环境检测报告智能识别系统</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
     :root {
-      --ink: #17212b;
-      --muted: #627084;
-      --line: #d8e1ea;
-      --panel: #f7fafc;
-      --blue: #1565c0;
-      --green: #18794e;
-      --red: #c62828;
-      --amber: #9a5b00;
-      --bg: #ffffff;
-      --soft: #eef4fb;
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #eef2ff;
+      --accent: #818cf8;
+      --success: #10b981;
+      --success-bg: #ecfdf5;
+      --danger: #ef4444;
+      --danger-bg: #fef2f2;
+      --warning: #f59e0b;
+      --warning-bg: #fffbeb;
+      --ink: #1e293b;
+      --ink-light: #475569;
+      --muted: #94a3b8;
+      --line: #e2e8f0;
+      --bg: #f8fafc;
+      --bg-alt: #f1f5f9;
+      --surface: #ffffff;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.05);
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,.07), 0 2px 4px -2px rgba(0,0,0,.05);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.05);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-xs: 6px;
     }
-    * { box-sizing: border-box; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      margin: 0;
-      font-family: Arial, "Microsoft YaHei", sans-serif;
+      font-family: “Inter”, “Segoe UI”, “PingFang SC”, “Microsoft YaHei”, “Noto Sans SC”, sans-serif;
       color: var(--ink);
-      background: var(--bg);
+      background: linear-gradient(135deg, #eef2ff 0%, #f0f9ff 30%, #f8fafc 60%, #faf5ff 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
+
+    /* ─── Header ─── */
     header {
-      border-bottom: 1px solid var(--line);
-      padding: 16px 22px;
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 40%, #7c3aed 100%);
+      padding: 20px 28px;
       display: flex;
       justify-content: space-between;
-      gap: 16px;
       align-items: center;
-    }
-    h1 { margin: 0; font-size: 22px; letter-spacing: 0; }
-    h2 { margin: 0 0 10px; font-size: 16px; }
-    main {
-      padding: 18px 22px 26px;
-      display: grid;
       gap: 16px;
+      box-shadow: 0 4px 20px rgba(79,70,229,.25);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-icon {
+      width: 38px;
+      height: 38px;
+      background: rgba(255,255,255,.18);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      backdrop-filter: blur(4px);
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -.01em;
+    }
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,.15);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      color: #e8e6ff;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #34d399;
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .4; }
+    }
+
+    /* ─── Main Grid ─── */
+    main {
+      padding: 24px 28px 36px;
+      display: grid;
+      gap: 20px;
+      max-width: 1440px;
+      margin: 0 auto;
     }
     .top-grid {
       display: grid;
-      grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.05fr);
-      gap: 16px;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
       align-items: start;
     }
-    section {
+
+    /* ─── Cards ─── */
+    .card {
+      background: var(--surface);
       border: 1px solid var(--line);
-      border-radius: 8px;
-      background: white;
-      padding: 14px;
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow .25s ease, border-color .25s ease;
       min-width: 0;
     }
-    .controls {
+    .card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: #cbd5e1;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .card-header h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+      flex: 1;
+    }
+    .card-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 500;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+    }
+    .card-toggle {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      transition: transform .3s ease;
+      font-size: 12px;
+    }
+    .card.collapsed .card-body { display: none; }
+    .card.collapsed .card-toggle { transform: rotate(-90deg); }
+
+    .card-body { transition: all .3s ease; }
+
+    /* ─── Form Controls ─── */
+    .controls { display: grid; gap: 14px; }
+    .form-row {
       display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .form-row-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
       gap: 12px;
     }
     label {
       display: grid;
-      gap: 6px;
-      color: var(--muted);
-      font-size: 13px;
+      gap: 5px;
+      color: var(--ink-light);
+      font-size: 12.5px;
+      font-weight: 500;
+      letter-spacing: .01em;
     }
     input, select, textarea {
       width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 9px;
-      font: inherit;
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius-xs);
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 13.5px;
       color: var(--ink);
-      background: white;
+      background: var(--bg);
+      transition: all .2s ease;
+      outline: none;
     }
-    textarea {
-      min-height: 130px;
-      resize: vertical;
-      font-family: Consolas, "Microsoft YaHei", monospace;
-      font-size: 12px;
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+      background: #fff;
     }
-    button {
-      height: 40px;
-      border: 0;
-      border-radius: 6px;
-      background: var(--blue);
-      color: white;
-      padding: 0 14px;
-      font: inherit;
+    input::placeholder { color: var(--muted); }
+    input[type=”file”] {
+      padding: 24px 16px;
+      text-align: center;
+      border: 2px dashed #cbd5e1;
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
       cursor: pointer;
+      transition: all .25s ease;
+      border-radius: var(--radius-sm);
     }
+    input[type=”file”]:hover {
+      border-color: var(--accent);
+      background: linear-gradient(135deg, #eef2ff, #f0f4ff);
+    }
+    input[type=”checkbox”] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+    input[readonly] { background: var(--bg-alt); color: var(--muted); }
+
+    /* ─── Buttons ─── */
+    button {
+      height: 38px;
+      border: 0;
+      border-radius: var(--radius-xs);
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white;
+      padding: 0 18px;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .2s ease;
+      box-shadow: 0 1px 2px rgba(79,70,229,.3);
+    }
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79,70,229,.4);
+    }
+    button:active { transform: translateY(0); }
     button.secondary {
-      background: white;
-      color: var(--blue);
-      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink-light);
+      border: 1.5px solid var(--line);
+      box-shadow: none;
     }
-    button:disabled { opacity: .55; cursor: default; }
-    .inline {
+    button.secondary:hover {
+      border-color: var(--accent);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+      background: var(--primary-light);
+    }
+    button.accent {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 1px 2px rgba(16,185,129,.3);
+    }
+    button.accent:hover { box-shadow: 0 4px 12px rgba(16,185,129,.4); }
+    button:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
-    .inline label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: var(--ink);
+    .btn-row .hint {
+      font-size: 12px;
+      color: var(--muted);
+      flex: 1;
+      min-width: 200px;
     }
-    input[type="checkbox"] { width: auto; }
+
+    /* ─── Metrics ─── */
     .metrics {
       display: grid;
-      grid-template-columns: repeat(4, minmax(130px, 1fr));
-      gap: 10px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
     }
     .metric {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px;
-      background: var(--panel);
-      min-height: 72px;
+      border-radius: var(--radius-sm);
+      padding: 16px 18px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
     }
-    .metric span {
+    .metric::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 3px;
+    }
+    .metric:nth-child(1) { background: linear-gradient(135deg, #eff6ff, #dbeafe); }
+    .metric:nth-child(1)::before { background: #3b82f6; }
+    .metric:nth-child(2) { background: linear-gradient(135deg, #f5f3ff, #ede9fe); }
+    .metric:nth-child(2)::before { background: #8b5cf6; }
+    .metric:nth-child(3) { background: linear-gradient(135deg, #fef2f2, #fee2e2); }
+    .metric:nth-child(3)::before { background: #ef4444; }
+    .metric:nth-child(4) { background: linear-gradient(135deg, #fffbeb, #fef3c7); }
+    .metric:nth-child(4)::before { background: #f59e0b; }
+    .metric-label {
       display: block;
-      color: var(--muted);
       font-size: 12px;
+      font-weight: 500;
       margin-bottom: 6px;
     }
-    .metric strong { font-size: 21px; }
-    .summary, .warnings {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px;
-      line-height: 1.55;
-      background: white;
+    .metric:nth-child(1) .metric-label { color: #3b82f6; }
+    .metric:nth-child(2) .metric-label { color: #7c3aed; }
+    .metric:nth-child(3) .metric-label { color: #dc2626; }
+    .metric:nth-child(4) .metric-label { color: #d97706; }
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+    }
+    .metric:nth-child(1) .metric-value { color: #1d4ed8; }
+    .metric:nth-child(2) .metric-value { color: #6d28d9; }
+    .metric:nth-child(3) .metric-value { color: #b91c1c; }
+    .metric:nth-child(4) .metric-value { color: #b45309; }
+
+    /* ─── Summary ─── */
+    .summary {
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      line-height: 1.6;
+      background: var(--bg-alt);
+      color: var(--ink);
       white-space: pre-wrap;
       word-break: break-word;
+      font-size: 13.5px;
     }
     .warnings {
       display: none;
-      border-color: #f0c36d;
-      background: #fff8e6;
-      color: #5f3b00;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      background: var(--warning-bg);
+      border: 1px solid #fcd34d;
+      color: #92400e;
+      font-size: 13px;
+      margin-top: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
+
+    /* ─── Tabs ─── */
     .tabs {
       display: flex;
-      gap: 8px;
+      gap: 4px;
       flex-wrap: wrap;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
+      background: var(--bg-alt);
+      border-radius: var(--radius-xs);
+      padding: 4px;
     }
     .tab-btn {
-      background: white;
-      color: var(--blue);
-      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink-light);
+      border: 0;
+      border-radius: 6px;
+      height: 34px;
+      padding: 0 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: none;
+      transition: all .2s ease;
+    }
+    .tab-btn:hover {
+      background: var(--surface);
+      color: var(--ink);
     }
     .tab-btn.active {
-      background: var(--blue);
-      color: white;
-      border-color: var(--blue);
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+      font-weight: 600;
     }
     .tab { display: none; }
     .tab.active { display: block; }
+
+    /* ─── Table ─── */
+    .table-wrap {
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
       table-layout: fixed;
-      border: 1px solid var(--line);
-      background: white;
+      background: var(--surface);
     }
     th, td {
       border-bottom: 1px solid var(--line);
-      padding: 8px;
+      padding: 10px 10px;
       vertical-align: top;
       text-align: left;
       font-size: 13px;
       word-break: break-word;
     }
     th {
+      background: #f8fafc;
+      font-weight: 600;
+      font-size: 11.5px;
       color: var(--muted);
-      background: var(--soft);
-      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      position: sticky;
+      top: 0;
     }
+    tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #fafbff; }
+    tbody tr:nth-child(even) { background: #fcfcfd; }
+    tbody tr:nth-child(even):hover { background: #f8f9ff; }
+    .pass { color: #059669; font-weight: 600; }
+    .fail { color: #dc2626; font-weight: 600; }
+    .review, .unknown { color: #d97706; font-weight: 600; }
+
+    /* ─── Code / JSON ─── */
     pre {
       margin: 0;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: var(--radius-sm);
+      padding: 16px;
       max-height: 520px;
       overflow: auto;
-      background: #101820;
-      color: #dce7f3;
-      font-size: 12px;
+      background: #0f172a;
+      color: #cbd5e1;
+      font-size: 12.5px;
+      font-family: “JetBrains Mono”, “Cascadia Code”, “Fira Code”, Consolas, “Microsoft YaHei”, monospace;
       white-space: pre-wrap;
       word-break: break-word;
+      line-height: 1.7;
     }
-    .pass { color: var(--green); font-weight: 700; }
-    .fail { color: var(--red); font-weight: 700; }
-    .review, .unknown { color: var(--amber); font-weight: 700; }
+
+    /* ─── Downloads ─── */
     .downloads {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      margin-top: 8px;
     }
     .downloads a {
-      color: var(--blue);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 8px 10px;
+      color: var(--primary);
+      background: var(--primary-light);
+      border-radius: 20px;
+      padding: 6px 14px;
       text-decoration: none;
-      font-size: 13px;
+      font-size: 12.5px;
+      font-weight: 500;
+      transition: all .2s ease;
     }
-    .formula-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(180px, 1fr));
-      gap: 10px;
+    .downloads a:hover {
+      background: #ddd6fe;
+      color: var(--primary-dark);
     }
-    .input-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(160px, 1fr));
-      gap: 10px;
+
+    /* ─── AI Status indicator ─── */
+    .ai-status-ok { color: #059669 !important; font-weight: 500; }
+    .ai-status-err { color: #dc2626 !important; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 1024px) {
+      .top-grid { grid-template-columns: 1fr; }
+      .form-row-4 { grid-template-columns: 1fr 1fr; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
     }
-    .status { color: var(--muted); min-height: 20px; font-size: 13px; }
-    @media (max-width: 980px) {
-      header { align-items: flex-start; flex-direction: column; }
-      .top-grid, .formula-grid, .input-grid { grid-template-columns: 1fr; }
-      .metrics { grid-template-columns: repeat(2, minmax(130px, 1fr)); }
+    @media (max-width: 640px) {
+      main { padding: 14px; gap: 14px; }
+      header { padding: 14px 16px; flex-wrap: wrap; }
+      .form-row, .form-row-4 { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: 1fr 1fr; gap: 8px; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>环境检测智能识别与公式核验测试台</h1>
-    <div class="status" id="status">就绪</div>
+    <div class=”header-brand”>
+      <div class=”header-icon”>🔬</div>
+      <h1>环境检测报告智能识别</h1>
+    </div>
+    <div class=”status-pill”>
+      <span class=”status-dot”></span>
+      <span id=”status”>就绪</span>
+    </div>
   </header>
   <main>
-    <section>
-      <h2>AI API 配置</h2>
-      <div class="controls">
-        <div class="formula-grid">
-          <label>服务商
-            <select id="aiProvider"></select>
-          </label>
-          <label>模型预设
-            <select id="aiModelSelect"></select>
-          </label>
-        </div>
-        <div class="formula-grid">
-          <label>模型名 / 部署名
-            <input id="aiModel" type="text" placeholder="可选预设，也可手动输入私有模型名" />
-          </label>
-          <label>Base URL
-            <input id="aiBaseUrl" type="text" placeholder="自动带入，也可填写你的私有代理地址" />
-          </label>
-        </div>
-        <div class="formula-grid">
-          <label>API Key
-            <input id="aiApiKey" type="password" autocomplete="off" placeholder="只保存在本机浏览器，不写入后台文件" />
-          </label>
-          <label>连接状态
-            <input id="aiConfigStatus" type="text" readonly value="未测试" />
-          </label>
-        </div>
-        <div class="inline">
-          <button class="secondary" id="saveAiConfigBtn" type="button">保存到本机浏览器</button>
-          <button class="secondary" id="clearAiConfigBtn" type="button">清空本机配置</button>
-          <button class="secondary" id="refreshAiModelsBtn" type="button">读取模型列表</button>
-          <button class="secondary" id="testAiConfigBtn" type="button">测试 API</button>
-          <span class="status">带“视觉”的模型会优先读 PDF 图片；文本模型会自动降级为 OCR 文本抽取。</span>
+    <!-- AI Config Card (collapsible) -->
+    <div class=”card collapsed” id=”aiConfigCard”>
+      <div class=”card-header” id=”aiConfigToggle”>
+        <h2>⚙ AI 模型配置</h2>
+        <span class=”card-badge” id=”aiBadge”>未测试</span>
+        <span class=”card-toggle”>▼</span>
+      </div>
+      <div class=”card-body”>
+        <div class=”controls”>
+          <div class=”form-row”>
+            <label>服务商 <select id=”aiProvider”></select></label>
+            <label>模型预设 <select id=”aiModelSelect”></select></label>
+          </div>
+          <div class=”form-row”>
+            <label>模型名 / 部署名 <input id=”aiModel” type=”text” placeholder=”可选预设，也可手动输入私有模型名” /></label>
+            <label>Base URL <input id=”aiBaseUrl” type=”text” placeholder=”自动带入，也可填写你的私有代理地址” /></label>
+          </div>
+          <div class=”form-row”>
+            <label>API Key <input id=”aiApiKey” type=”password” autocomplete=”off” placeholder=”只保存在本机浏览器，不写入后台文件” /></label>
+            <label>连接状态 <input id=”aiConfigStatus” type=”text” readonly value=”未测试” /></label>
+          </div>
+          <div class=”btn-row”>
+            <button class=”secondary” id=”saveAiConfigBtn” type=”button”>保存配置</button>
+            <button class=”secondary” id=”clearAiConfigBtn” type=”button”>清空</button>
+            <button class=”secondary” id=”refreshAiModelsBtn” type=”button”>读取模型列表</button>
+            <button id=”testAiConfigBtn” type=”button”>测试连接</button>
+            <span class=”hint”>视觉模型读 PDF 图片；文本模型自动降级为 OCR 文本抽取</span>
+          </div>
         </div>
       </div>
-    </section>
-
-    <div class="top-grid">
-      <section>
-        <h2>报告识别</h2>
-        <form class="controls" id="uploadForm">
-          <label>报告 PDF / 图片
-            <input id="files" name="files" type="file" multiple accept=".jpg,.jpeg,.png,.bmp,.tif,.tiff,.webp,.pdf" />
-          </label>
-          <label>执行标准
-            <select id="standard" name="standard_key"></select>
-          </label>
-          <div class="inline">
-            <label><input id="useAi" name="use_ai" type="checkbox" /> AI 智能抽取</label>
-            <button id="runBtn" type="submit">开始识别</button>
-          </div>
-        </form>
-      </section>
-
-      <section>
-        <h2>公式复算与 AI 复检</h2>
-        <div class="controls">
-          <div class="formula-grid">
-            <label>公式/方法
-              <select id="formulaSelect"></select>
-            </label>
-            <label>报告值
-              <input id="reportedValue" type="number" step="any" placeholder="可为空，仅机器计算" />
-            </label>
-          </div>
-          <div class="input-grid" id="formulaInputs"></div>
-          <div class="inline">
-            <label><input id="formulaAi" type="checkbox" /> AI 复检</label>
-            <button id="verifyBtn" type="button">执行公式核验</button>
-            <button class="secondary" id="fillDemoBtn" type="button">填入示例</button>
-          </div>
-        </div>
-      </section>
     </div>
 
-    <section>
-      <div class="metrics">
-        <div class="metric"><span>合格率</span><strong id="rate">-</strong></div>
-        <div class="metric"><span>记录数</span><strong id="total">0</strong></div>
-        <div class="metric"><span>超标</span><strong id="fail">0</strong></div>
-        <div class="metric"><span>复核</span><strong id="review">0</strong></div>
-      </div>
-    </section>
-
-    <section>
-      <h2>简报与下载</h2>
-      <div class="summary" id="summary">暂无结果</div>
-      <div class="warnings" id="warnings"></div>
-      <div class="downloads" id="downloads"></div>
-    </section>
-
-    <section>
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="recordsTab" type="button">结构化结果</button>
-        <button class="tab-btn" data-tab="formulaTab" type="button">公式核验结果</button>
-        <button class="tab-btn" data-tab="libraryTab" type="button">公式库</button>
-        <button class="tab-btn" data-tab="jsonTab" type="button">完整 JSON</button>
+    <!-- Report + Formula row -->
+    <div class=”top-grid”>
+      <div class=”card”>
+        <div class=”card-header”><h2>📄 报告识别</h2></div>
+        <div class=”card-body”>
+          <form class=”controls” id=”uploadForm”>
+            <label>上传报告文件（PDF / 图片）
+              <input id=”files” name=”files” type=”file” multiple accept=”.jpg,.jpeg,.png,.bmp,.tif,.tiff,.webp,.pdf” />
+            </label>
+            <label>执行标准 <select id=”standard” name=”standard_key”></select></label>
+            <div class=”btn-row”>
+              <label style=”display:flex;align-items:center;gap:6px;font-weight:500;color:var(--ink);font-size:13.5px;”>
+                <input id=”useAi” name=”use_ai” type=”checkbox” /> AI 智能抽取
+              </label>
+              <button class=”accent” id=”runBtn” type=”submit” style=”font-size:14px;”>🚀 开始识别</button>
+            </div>
+          </form>
+        </div>
       </div>
 
-      <div class="tab active" id="recordsTab">
-        <table>
-          <thead>
-            <tr>
-              <th>指标</th><th>检测值</th><th>单位</th><th>限值</th><th>状态</th><th>数据库匹配</th><th>公式核验</th><th>置信度</th><th>样品/点位</th><th>检测日期</th><th>来源行</th>
-            </tr>
-          </thead>
-          <tbody id="records"></tbody>
-        </table>
+      <div class=”card”>
+        <div class=”card-header”><h2>🧮 公式复算与 AI 复检</h2></div>
+        <div class=”card-body”>
+          <div class=”controls”>
+            <div class=”form-row”>
+              <label>公式 / 方法 <select id=”formulaSelect”></select></label>
+              <label>报告值 <input id=”reportedValue” type=”number” step=”any” placeholder=”可为空，仅机器计算” /></label>
+            </div>
+            <div class=”input-grid” id=”formulaInputs” style=”display:grid;grid-template-columns:1fr 1fr;gap:12px;”></div>
+            <div class=”btn-row”>
+              <label style=”display:flex;align-items:center;gap:6px;font-weight:500;color:var(--ink);font-size:13.5px;”>
+                <input id=”formulaAi” type=”checkbox” /> AI 复检
+              </label>
+              <button id=”verifyBtn” type=”button”>执行核验</button>
+              <button class=”secondary” id=”fillDemoBtn” type=”button”>填入示例</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class=”card”>
+      <div class=”metrics”>
+        <div class=”metric”><span class=”metric-label”>合格率</span><span class=”metric-value” id=”rate”>-</span></div>
+        <div class=”metric”><span class=”metric-label”>记录数</span><span class=”metric-value” id=”total”>0</span></div>
+        <div class=”metric”><span class=”metric-label”>超标</span><span class=”metric-value” id=”fail”>0</span></div>
+        <div class=”metric”><span class=”metric-label”>复核</span><span class=”metric-value” id=”review”>0</span></div>
+      </div>
+    </div>
+
+    <!-- Brief & Downloads -->
+    <div class=”card”>
+      <div class=”card-header”><h2>📋 简报与下载</h2></div>
+      <div class=”summary” id=”summary”>暂未识别报告，请上传文件后点击”开始识别”</div>
+      <div class=”warnings” id=”warnings”></div>
+      <div class=”downloads” id=”downloads”></div>
+    </div>
+
+    <!-- Results Tabs -->
+    <div class=”card”>
+      <div class=”tabs”>
+        <button class=”tab-btn active” data-tab=”recordsTab” type=”button”>📊 结构化结果</button>
+        <button class=”tab-btn” data-tab=”formulaTab” type=”button”>🔍 公式核验结果</button>
+        <button class=”tab-btn” data-tab=”libraryTab” type=”button”>📚 公式库</button>
+        <button class=”tab-btn” data-tab=”jsonTab” type=”button”>{ } 完整 JSON</button>
       </div>
 
-      <div class="tab" id="formulaTab">
-        <pre id="formulaResult">{}</pre>
+      <div class=”tab active” id=”recordsTab”>
+        <div class=”table-wrap”>
+          <table>
+            <thead>
+              <tr>
+                <th style=”width:9%”>指标</th><th style=”width:7%”>检测值</th><th style=”width:6%”>单位</th><th style=”width:8%”>限值</th><th style=”width:6%”>状态</th><th style=”width:11%”>数据库匹配</th><th style=”width:9%”>公式核验</th><th style=”width:6%”>置信度</th><th style=”width:8%”>样品/点位</th><th style=”width:8%”>检测日期</th><th>来源行</th>
+              </tr>
+            </thead>
+            <tbody id=”records”></tbody>
+          </table>
+        </div>
       </div>
-
-      <div class="tab" id="libraryTab">
-        <table>
-          <thead><tr><th>指标</th><th>方法</th><th>标准号</th><th>所需参数</th><th>来源文件</th></tr></thead>
-          <tbody id="formulaLibrary"></tbody>
-        </table>
+      <div class=”tab” id=”formulaTab”><pre id=”formulaResult”>{}</pre></div>
+      <div class=”tab” id=”libraryTab”>
+        <div class=”table-wrap”>
+          <table>
+            <thead><tr><th>指标</th><th>方法</th><th>标准号</th><th>所需参数</th><th>来源文件</th></tr></thead>
+            <tbody id=”formulaLibrary”></tbody>
+          </table>
+        </div>
       </div>
-
-      <div class="tab" id="jsonTab">
-        <pre id="jsonPreview">{}</pre>
-      </div>
-    </section>
+      <div class=”tab” id=”jsonTab”><pre id=”jsonPreview”>{}</pre></div>
+    </div>
   </main>
 
   <script>
@@ -1180,6 +1443,29 @@ INDEX_HTML = """
     document.getElementById("verifyBtn").addEventListener("click", verifyFormula);
     document.getElementById("fillDemoBtn").addEventListener("click", fillDemo);
     document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.tab)));
+
+    // ── AI Config card toggle ──
+    const aiConfigToggle = document.getElementById("aiConfigToggle");
+    const aiConfigCard = document.getElementById("aiConfigCard");
+    const aiBadge = document.getElementById("aiBadge");
+    aiConfigToggle.addEventListener("click", () => aiConfigCard.classList.toggle("collapsed"));
+
+    // ── Override: update badge on AI test ──
+    const origTestAiConfig = testAiConfig;
+    testAiConfig = async function() {
+      await origTestAiConfig();
+      if (aiConfigStatus.value.includes("成功")) {
+        aiBadge.textContent = "已连接";
+        aiBadge.style.background = "#ecfdf5";
+        aiBadge.style.color = "#059669";
+      } else if (aiConfigStatus.value.includes("失败")) {
+        aiBadge.textContent = "未连接";
+        aiBadge.style.background = "#fef2f2";
+        aiBadge.style.color = "#dc2626";
+      } else {
+        aiBadge.textContent = aiConfigStatus.value || "未测试";
+      }
+    };
 
     Promise.all([loadAiProviders(), loadStandards(), loadFormulas()])
       .then(() => {
