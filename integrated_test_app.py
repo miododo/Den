@@ -386,7 +386,7 @@ app = FastAPI(title="Env AI Integrated Test Console", version="0.3.0")
 app.mount("/exports", StaticFiles(directory=EXPORTS_DIR), name="exports")
 
 
-INDEX_HTML = “””
+INDEX_HTML = """
 <!doctype html>
 <html lang="zh-CN">
 <head>
@@ -1172,8 +1172,7 @@ pre {
         inputs: collectFormulaInputs(),
         ...collectAiConfig()
       };
-      setStatus("公式核验中…");
-      setStep(4);
+      setStatus("公式核验中");
       document.getElementById("verifyBtn").disabled = true;
       try {
         const res = await fetch("/api/formula/verify", {
@@ -1211,15 +1210,13 @@ pre {
       data.append("use_ai", document.getElementById("useAi").checked ? "true" : "false");
       appendAiConfig(data);
       runBtn.disabled = true;
-      setStep(3);
-      setStatus("识别中：预处理 → OCR → 结构化 → 标准判定 → 公式库匹配");
+      setStatus("识别中：正在预处理、OCR、结构化、标准判定和公式库匹配");
       try {
         const res = await fetch("/api/analyze", { method: "POST", body: data });
         const payload = await res.json();
         if (!res.ok) throw new Error(payload.detail || "识别失败");
         renderAnalyze(payload);
         activateTab("recordsTab");
-        setStep(5);
         setStatus("报告识别完成");
       } catch (error) {
         setStatus(error.message);
@@ -1228,27 +1225,7 @@ pre {
       }
     });
 
-    filesInput.addEventListener("change", () => {
-      suggestStandard(filesInput.files);
-      const info = document.getElementById("fileInfo");
-      if (filesInput.files.length) {
-        const items = [];
-        let totalSize = 0;
-        [...filesInput.files].forEach((file, i) => {
-          const size = file.size < 1048576 ? (file.size/1024).toFixed(0)+" KB" : (file.size/1048576).toFixed(1)+" MB";
-          totalSize += file.size;
-          const ext = file.name.split(".").pop().toUpperCase();
-          items.push(`${i+1}. ${file.name} <span style="color:var(--muted);">(${size}, ${ext})</span>`);
-        });
-        const total = totalSize < 1048576 ? (totalSize/1024).toFixed(0)+" KB" : (totalSize/1048576).toFixed(1)+" MB";
-        info.innerHTML = "已选择 <b>"+filesInput.files.length+"</b> 个文件，共 <b>"+total+"</b><br>" + items.slice(0,6).join("<br>") + (items.length>6?"<br>…及其他 "+(items.length-6)+" 个文件":"");
-        info.style.display = "block";
-        setStep(2);
-      } else {
-        info.style.display = "none";
-        setStep(1);
-      }
-    });
+    filesInput.addEventListener("change", () => suggestStandard(filesInput.files));
     formulaSelect.addEventListener("change", renderFormulaInputs);
     aiProvider.addEventListener("change", () => applyAiPreset(true));
     aiModelSelect.addEventListener("change", () => {
@@ -1265,41 +1242,14 @@ pre {
     document.getElementById("fillDemoBtn").addEventListener("click", fillDemo);
     document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.tab)));
 
-    // ── Step progress helper ──
-    function setStep(n) {
-      for (let i = 1; i <= 5; i++) {
-        const step = document.getElementById("step"+i);
-        step.classList.remove("active", "done");
-        if (i < n) step.classList.add("done");
-        if (i === n) step.classList.add("active");
-      }
-      document.querySelectorAll(".step-connector").forEach((c, i) => {
-        c.classList.toggle("done", i < n-1);
-      });
-    }
-
-    // ── AI Config card toggle ──
-    const aiConfigToggle = document.getElementById("aiConfigToggle");
-    const aiConfigCard = document.getElementById("aiConfigCard");
-    const aiBadge = document.getElementById("aiBadge");
-    aiConfigToggle.addEventListener("click", () => aiConfigCard.classList.toggle("collapsed"));
-
-    // ── Override: update badge on AI test ──
-    const origTestAiConfig = testAiConfig;
-    testAiConfig = async function() {
-      await origTestAiConfig();
-      if (aiConfigStatus.value.includes("成功")) {
-        aiBadge.textContent = "已连接";
-        aiBadge.style.background = "#ecfdf5";
-        aiBadge.style.color = "#059669";
-      } else if (aiConfigStatus.value.includes("失败")) {
-        aiBadge.textContent = "未连接";
-        aiBadge.style.background = "#fef2f2";
-        aiBadge.style.color = "#dc2626";
-      } else {
-        aiBadge.textContent = aiConfigStatus.value || "未测试";
-      }
-    };
+    Promise.all([loadAiProviders(), loadStandards(), loadFormulas()])
+      .then(() => {
+        loadAiConfig();
+        setStatus("就绪");
+      })
+      .catch((error) => setStatus(error.message));
+  
+    // ═══════════════════ NEW UI FEATURES ═══════════════════
 
     // ── API Key toggle ──
     document.getElementById("toggleApiKeyBtn").addEventListener("click", () => {
@@ -1330,7 +1280,7 @@ pre {
         row.style.display = show ? "" : "none";
         if (show) visible++;
       });
-      tableCount.textContent = visible + " 条记录";
+      tableCount.textContent = visible + " / " + rows.length + " 条记录";
     }
     tableSearch.addEventListener("input", applyTableFilters);
     tableFilter.addEventListener("change", applyTableFilters);
@@ -1360,7 +1310,7 @@ pre {
       });
     });
 
-    // ── Update hero stats & dashboard ──
+    // ── Override renderAnalyze for dashboard + downloads ──
     const origRenderAnalyze = renderAnalyze;
     renderAnalyze = function(result) {
       origRenderAnalyze(result);
@@ -1370,7 +1320,7 @@ pre {
       const passR = stats.pass_count || 0;
       const failR = stats.fail_count || 0;
       const reviewR = stats.review_count || 0;
-      // Hero
+      // Hero stats
       document.getElementById("hsReports").textContent = judged || "0";
       document.getElementById("hsItems").textContent = totalR;
       document.getElementById("hsAbnormal").textContent = failR;
@@ -1384,81 +1334,51 @@ pre {
       document.getElementById("dlPdf").innerHTML = dl["增强 PDF"] ? '<a href="'+dl['增强 PDF']+'" target="_blank">下载 PDF</a>' : '<span class="dl-status">等待生成</span>';
       document.getElementById("dlHtml").innerHTML = dl.HTML ? '<a href="'+dl.HTML+'" target="_blank">下载 HTML</a>' : '<span class="dl-status">等待生成</span>';
       document.getElementById("dlJson").innerHTML = dl.JSON ? '<a href="'+dl.JSON+'" target="_blank">下载 JSON</a>' : '<span class="dl-status">等待生成</span>';
-      // Row expand buttons
-      document.querySelectorAll("#records tr").forEach((tr, i) => {
-        const opTd = tr.querySelector("td:last-child");
-        if (opTd && !opTd.querySelector(".expand-btn")) {
-          const btn = document.createElement("button");
-          btn.className = "expand-btn";
-          btn.textContent = "详情";
-          btn.onclick = () => {
-            const expandRow = tr.nextElementSibling;
-            if (expandRow && expandRow.classList.contains("row-expand")) {
-              expandRow.classList.toggle("open");
-            }
-          };
-          opTd.appendChild(btn);
-        }
-      });
       applyTableFilters();
-      setStep(5);
     };
 
-    // ── Progress animation during analyze ──
-    const origFormSubmit = form.onsubmit;
-    form.addEventListener("submit", async (event) => {
-      const progressDiv = document.getElementById("progressSteps");
-      const stepItems = progressDiv.querySelectorAll(".ps-item");
-      progressDiv.style.display = "block";
-      let currentStep = 0;
-      const advanceProgress = setInterval(() => {
-        if (currentStep < stepItems.length) {
-          stepItems[currentStep].classList.add("current");
-          if (currentStep > 0) stepItems[currentStep-1].classList.replace("current", "done");
-          currentStep++;
-        }
-      }, 800);
-      try {
-        // The original handler handles the actual submission
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } finally {
-        setTimeout(() => {
-          clearInterval(advanceProgress);
-          stepItems.forEach(s => { s.classList.remove("current"); s.classList.add("done"); });
-          setTimeout(() => { progressDiv.style.display = "none"; stepItems.forEach(s => s.className = "ps-item"); }, 1500);
-        }, 2000);
+    // ── File info display ──
+    filesInput.addEventListener("change", () => {
+      const info = document.getElementById("fileInfo");
+      if (filesInput.files.length) {
+        const items = [];
+        let totalSize = 0;
+        [...filesInput.files].forEach((f, i) => {
+          const size = f.size < 1048576 ? (f.size/1024).toFixed(0)+" KB" : (f.size/1048576).toFixed(1)+" MB";
+          totalSize += f.size;
+          items.push(i+1+". "+f.name+' ('+size+", "+f.name.split(".").pop().toUpperCase()+")");
+        });
+        const total = totalSize < 1048576 ? (totalSize/1024).toFixed(0)+" KB" : (totalSize/1048576).toFixed(1)+" MB";
+        info.innerHTML = "已选择 <b>"+filesInput.files.length+"</b> 个文件，共 <b>"+total+"</b><br>"+items.slice(0,8).join("<br>")+(items.length>8?"<br>…及其他 "+(items.length-8)+" 个文件":"");
+        info.style.display = "block";
+      } else {
+        info.style.display = "none";
       }
     });
 
-    // ── Step click navigation ──
+    // ── Step navigation click ──
     document.querySelectorAll(".step").forEach(el => {
       el.addEventListener("click", () => {
         const n = parseInt(el.id.replace("step",""));
         const isDone = el.classList.contains("done");
         const isActive = el.classList.contains("active");
         if (isDone || isActive) {
-          // Scroll to relevant section
-          const sections = [null, "#aiConfigCard", "#uploadForm", "#uploadForm", "#verifyBtn", "#dashSection"];
-          const target = sections[n];
+          const targets = [null, "#aiConfigCard", "#files", "#runBtn", "#verifyBtn", "#dashSection"];
+          const target = targets[n];
           if (target) {
             const elTarget = document.querySelector(target);
             if (elTarget) elTarget.scrollIntoView({behavior:"smooth",block:"center"});
           }
         } else {
-          setStatus("请先完成前面的步骤");
+          statusEl.textContent = "请先完成前面的步骤";
         }
       });
     });
 
-    Promise.all([loadAiProviders(), loadStandards(), loadFormulas()])
-      .then(() => {
-        loadAiConfig();
-        setStatus("就绪");
-      })
-      .catch((error) => setStatus(error.message));
-  </script>
+</script>
 </body>
 </html>
+
 """
 
 
