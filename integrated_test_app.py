@@ -859,6 +859,59 @@ INDEX_HTML = “””
     .ai-status-ok { color: #059669 !important; font-weight: 500; }
     .ai-status-err { color: #dc2626 !important; }
 
+    /* ─── Steps Progress Bar ─── */
+    .steps-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 18px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .step-num {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      background: var(--bg-alt);
+      color: var(--muted);
+      transition: all .3s ease;
+    }
+    .step.active .step-num {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white;
+      box-shadow: 0 2px 8px rgba(79,70,229,.3);
+    }
+    .step.active { color: var(--primary); font-weight: 600; }
+    .step.done .step-num {
+      background: #10b981;
+      color: white;
+    }
+    .step.done { color: #059669; }
+    .step-connector {
+      width: 32px;
+      height: 2px;
+      background: var(--line);
+      margin: 0 4px;
+      transition: background .3s ease;
+    }
+    .step-connector.done { background: #10b981; }
+
     /* ─── Responsive ─── */
     @media (max-width: 1024px) {
       .top-grid { grid-template-columns: 1fr; }
@@ -884,8 +937,20 @@ INDEX_HTML = “””
       <span id=”status”>就绪</span>
     </div>
   </header>
+  <!-- Step Progress Bar -->
+  <div class="steps-bar">
+    <div class="step active" id="step1"><div class="step-num">1</div><span>配置 AI 模型</span></div>
+    <div class="step-connector"></div>
+    <div class="step" id="step2"><div class="step-num">2</div><span>上传报告文件</span></div>
+    <div class="step-connector"></div>
+    <div class="step" id="step3"><div class="step-num">3</div><span>智能识别分析</span></div>
+    <div class="step-connector"></div>
+    <div class="step" id="step4"><div class="step-num">4</div><span>公式复算核验</span></div>
+    <div class="step-connector"></div>
+    <div class="step" id="step5"><div class="step-num">5</div><span>查看导出结果</span></div>
+  </div>
+
   <main>
-    <!-- AI Config Card (collapsible) -->
     <div class=”card collapsed” id=”aiConfigCard”>
       <div class=”card-header” id=”aiConfigToggle”>
         <h2>⚙ AI 模型配置</h2>
@@ -926,12 +991,13 @@ INDEX_HTML = “””
             <label>上传报告文件（PDF / 图片）
               <input id=”files” name=”files” type=”file” multiple accept=”.jpg,.jpeg,.png,.bmp,.tif,.tiff,.webp,.pdf” />
             </label>
+            <div id=”fileInfo” style=”display:none;font-size:12px;color:var(--ink-light);padding:8px 12px;background:var(--primary-light);border-radius:var(--radius-xs);line-height:1.8;”></div>
             <label>执行标准 <select id=”standard” name=”standard_key”></select></label>
             <div class=”btn-row”>
               <label style=”display:flex;align-items:center;gap:6px;font-weight:500;color:var(--ink);font-size:13.5px;”>
-                <input id=”useAi” name=”use_ai” type=”checkbox” /> AI 智能抽取
+                <input id=”useAi” name=”use_ai” type=”checkbox” /> 智能提取报告数据
               </label>
-              <button class=”accent” id=”runBtn” type=”submit” style=”font-size:14px;”>🚀 开始识别</button>
+              <button class=”accent” id=”runBtn” type=”submit” style=”font-size:14px;”>🚀 开始识别文件</button>
             </div>
           </form>
         </div>
@@ -948,10 +1014,10 @@ INDEX_HTML = “””
             <div class=”input-grid” id=”formulaInputs” style=”display:grid;grid-template-columns:1fr 1fr;gap:12px;”></div>
             <div class=”btn-row”>
               <label style=”display:flex;align-items:center;gap:6px;font-weight:500;color:var(--ink);font-size:13.5px;”>
-                <input id=”formulaAi” type=”checkbox” /> AI 复检
+                <input id=”formulaAi” type=”checkbox” /> AI 检查异常项
               </label>
-              <button id=”verifyBtn” type=”button”>执行核验</button>
-              <button class=”secondary” id=”fillDemoBtn” type=”button”>填入示例</button>
+              <button id=”verifyBtn” type=”button”>复算检测公式</button>
+              <button class=”secondary” id=”fillDemoBtn” type=”button”>加载示例数据</button>
             </div>
           </div>
         </div>
@@ -971,7 +1037,7 @@ INDEX_HTML = “””
     <!-- Brief & Downloads -->
     <div class=”card”>
       <div class=”card-header”><h2>📋 简报与下载</h2></div>
-      <div class=”summary” id=”summary”>暂未识别报告，请上传文件后点击”开始识别”</div>
+      <div class=”summary” id=”summary”>👈 请先上传环境检测报告文件（PDF 或图片），然后点击”开始识别文件”按钮，系统将自动提取检测数据并判定达标情况。</div>
       <div class=”warnings” id=”warnings”></div>
       <div class=”downloads” id=”downloads”></div>
     </div>
@@ -1374,7 +1440,8 @@ INDEX_HTML = “””
         inputs: collectFormulaInputs(),
         ...collectAiConfig()
       };
-      setStatus("公式核验中");
+      setStatus("公式核验中…");
+      setStep(4);
       document.getElementById("verifyBtn").disabled = true;
       try {
         const res = await fetch("/api/formula/verify", {
@@ -1412,13 +1479,15 @@ INDEX_HTML = “””
       data.append("use_ai", document.getElementById("useAi").checked ? "true" : "false");
       appendAiConfig(data);
       runBtn.disabled = true;
-      setStatus("识别中：正在预处理、OCR、结构化、标准判定和公式库匹配");
+      setStep(3);
+      setStatus("识别中：预处理 → OCR → 结构化 → 标准判定 → 公式库匹配");
       try {
         const res = await fetch("/api/analyze", { method: "POST", body: data });
         const payload = await res.json();
         if (!res.ok) throw new Error(payload.detail || "识别失败");
         renderAnalyze(payload);
         activateTab("recordsTab");
+        setStep(5);
         setStatus("报告识别完成");
       } catch (error) {
         setStatus(error.message);
@@ -1427,7 +1496,27 @@ INDEX_HTML = “””
       }
     });
 
-    filesInput.addEventListener("change", () => suggestStandard(filesInput.files));
+    filesInput.addEventListener("change", () => {
+      suggestStandard(filesInput.files);
+      const info = document.getElementById("fileInfo");
+      if (filesInput.files.length) {
+        const items = [];
+        let totalSize = 0;
+        [...filesInput.files].forEach((file, i) => {
+          const size = file.size < 1048576 ? (file.size/1024).toFixed(0)+" KB" : (file.size/1048576).toFixed(1)+" MB";
+          totalSize += file.size;
+          const ext = file.name.split(".").pop().toUpperCase();
+          items.push(`${i+1}. ${file.name} <span style="color:var(--muted);">(${size}, ${ext})</span>`);
+        });
+        const total = totalSize < 1048576 ? (totalSize/1024).toFixed(0)+" KB" : (totalSize/1048576).toFixed(1)+" MB";
+        info.innerHTML = "已选择 <b>"+filesInput.files.length+"</b> 个文件，共 <b>"+total+"</b><br>" + items.slice(0,6).join("<br>") + (items.length>6?"<br>…及其他 "+(items.length-6)+" 个文件":"");
+        info.style.display = "block";
+        setStep(2);
+      } else {
+        info.style.display = "none";
+        setStep(1);
+      }
+    });
     formulaSelect.addEventListener("change", renderFormulaInputs);
     aiProvider.addEventListener("change", () => applyAiPreset(true));
     aiModelSelect.addEventListener("change", () => {
@@ -1443,6 +1532,19 @@ INDEX_HTML = “””
     document.getElementById("verifyBtn").addEventListener("click", verifyFormula);
     document.getElementById("fillDemoBtn").addEventListener("click", fillDemo);
     document.querySelectorAll(".tab-btn").forEach(btn => btn.addEventListener("click", () => activateTab(btn.dataset.tab)));
+
+    // ── Step progress helper ──
+    function setStep(n) {
+      for (let i = 1; i <= 5; i++) {
+        const step = document.getElementById("step"+i);
+        step.classList.remove("active", "done");
+        if (i < n) step.classList.add("done");
+        if (i === n) step.classList.add("active");
+      }
+      document.querySelectorAll(".step-connector").forEach((c, i) => {
+        c.classList.toggle("done", i < n-1);
+      });
+    }
 
     // ── AI Config card toggle ──
     const aiConfigToggle = document.getElementById("aiConfigToggle");
