@@ -387,10 +387,15 @@ app.mount("/exports", StaticFiles(directory=EXPORTS_DIR), name="exports")
 
 
 def _load_index_html():
-    """Load HTML from templates/index.html with caching."""
+    """Load HTML template from file (cached on first read)."""
+    cache_key = "_index_html_cache"
+    if hasattr(_load_index_html, cache_key):
+        return getattr(_load_index_html, cache_key)
     html_path = Path(__file__).resolve().parent / "templates" / "index.html"
     with open(html_path, "r", encoding="utf-8") as f:
-        return f.read()
+        html = f.read()
+    setattr(_load_index_html, cache_key, html)
+    return html
 
 
 _INDEX_HTML_DEPRECATED = """
