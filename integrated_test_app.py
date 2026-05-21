@@ -1210,6 +1210,22 @@ def index() -> str:
     return _load_index_html()
 
 
+@app.get("/debug/version")
+def debug_version() -> dict:
+    html_path = APP_DIR / "templates" / "index.html"
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        return {
+            "template_found": True,
+            "template_size": len(content),
+            "has_collapsed": "class=\"card collapsed\" id=\"aiConfigCard\"" in content,
+            "has_v2_title": "v2" in content,
+            "title": content[content.find("<title>")+7:content.find("</title>")] if "<title>" in content else "N/A",
+        }
+    except Exception as e:
+        return {"template_found": False, "error": str(e)}
+
 @app.get("/health")
 def health() -> dict:
     return {
